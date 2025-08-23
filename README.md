@@ -1,4 +1,4 @@
-# Implementation of 
+# Implementation of: Unveiling the Latent Directions of Reflection in Large Language Models
 
 
 ## Installation
