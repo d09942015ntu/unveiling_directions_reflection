@@ -1,0 +1,8 @@
+nltk
+transformers[torch]
+tqdm
+torch
+pandas
+numpy
+matplotlib
+lm_eval
