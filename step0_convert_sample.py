@@ -2,6 +2,7 @@ import argparse
 import json
 import os.path
 
+
 def get_doc_cruxeval_o(item):
     doc_truth_cot = item["cot"]
     doc_messy_cot = item["messy_cot"]

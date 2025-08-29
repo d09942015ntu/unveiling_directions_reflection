@@ -6,18 +6,16 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-def parse_json_file(json_file_expr):
-    json_files_paths = sorted(glob.glob(json_file_expr))
+def parse_json_file(json_files_path):
     acc = None
-    for json_files_path in json_files_paths:
-        json_item = json.load(open(json_files_path))
-        for t_name in json_item['results'].keys():
-            if 'exact_match,flexible-extract' in  json_item['results'][t_name]:
-                acc = json_item['results'][t_name]['exact_match,flexible-extract']
-                break
-            elif "pass@1,create_test" in json_item['results'][t_name]:
-                acc = json_item['results'][t_name]["pass@1,create_test"]
-                break
+    json_item = json.load(open(json_files_path))
+    for t_name in json_item['results'].keys():
+        if 'exact_match,flexible-extract' in  json_item['results'][t_name]:
+            acc = json_item['results'][t_name]['exact_match,flexible-extract']
+            break
+        elif "pass@1,create_test" in json_item['results'][t_name]:
+            acc = json_item['results'][t_name]["pass@1,create_test"]
+            break
 
     assert acc is not None
     return acc
@@ -98,27 +96,27 @@ def tikz_result(plot_data, plot_meta):
 
 def parse_all_result(dataset_name, input_dir, output_dir, ymax, limit, model_name):
 
-    if model_name == "qwen3b":
+    if model_name == "MyQwen2.5-3B":
         skey_stype={
-            1:["eos","answer"],
-            -1: ["wait","eos"],
+             1: ["Output", "Result", "#", "%"],
+            -1: ["Alternatively","Check", "#", "%"],
         }
-    elif model_name == "gemma4b":
+    elif model_name == "gemma-3-4b-it":
         skey_stype={
-            1:["<eos>","answer"],
-            -1: ["wait","<eos>"],
+             1: ["Output", "Result", "#", "%"],
+            -1: ["Alternatively","Check", "#", "%"],
         }
     else:
         assert 0
 
     model_map={
-        "qwen3b":"Qwen2.5-3B",
-        "gemma4b":"Gemma3-4B"
+        "MyQwen2.5-3B":"Qwen2.5-3B",
+        "gemma-3-4b-it":"Gemma3-4B"
     }
 
     max_layers = {
-        "qwen3b": 35,
-        "gemma4b": 33
+        "MyQwen2.5-3B": 35,
+        "gemma-3-4b-it": 33
     }
 
     for s in skey_stype.keys():
@@ -134,7 +132,7 @@ def parse_all_result(dataset_name, input_dir, output_dir, ymax, limit, model_nam
             }
         else:
             assert 0
-        steering_type = list(steering_vector_name.keys())
+        steering_types = list(steering_vector_name.keys())
 
         for start_type in skey_stype[s]:
             plot_data = []
@@ -149,18 +147,18 @@ def parse_all_result(dataset_name, input_dir, output_dir, ymax, limit, model_nam
             random_dict = defaultdict(list)
             layer_ids = list(range(max_layers[model_name]+1))
             i=0
-            for steering_type in steering_type:
+            for steering_type in steering_types:
                 results = []
                 layer_id_exists = []
                 for layer_id in layer_ids:
                     json_files_expr = os.path.join(input_dir,f"s{s}_{start_type}_{limit}_{steering_type}_l{layer_id}", ".*", "*.json")
-                    print(json_files_expr)
+                    #print(json_files_expr
                     json_files_paths = sorted(glob.glob(json_files_expr))
                     if len(json_files_paths) >= 1:
                         layer_id_exists.append(layer_id)
                         acc = parse_json_file(json_files_paths[0])
                         results.append(acc)
-                print(f"layer_ids={layer_ids}, results={results}, steering_type={steering_type}")
+                    print(f"start_type={start_type}, steering_type={steering_type}, layer_ids={layer_id}, results={results}, ")
                 if len(layer_id_exists) > 0:
                     plot_data.append({
                         "x": layer_id_exists,
@@ -193,36 +191,30 @@ def parse_all_result(dataset_name, input_dir, output_dir, ymax, limit, model_nam
                 })
                 i += 1
 
-            gt_type_starts ={
-                "wait":["Wait"],
-                "eos":["<eos>", "<|endoftext|>"],
-                "<eos>":["<eos>", "<|endoftext|>"],
-                "answer":["Answer"]
-            }
+            #gt_type_starts ={
+            #    "wait":["Wait"],
+            #    "eos":["<eos>", "<|endoftext|>"],
+            #    "<eos>":["<eos>", "<|endoftext|>"],
+            #    "answer":["Answer"]
+            #}
 
-            for gt_type in gt_type_starts[start_type]:
-                json_files_expr = os.path.join(input_dir.replace("step4","step1"), f"gt_{limit}_{gt_type}", ".*", "*.json")
-                json_files_paths = sorted(glob.glob(json_files_expr))
-                if len(json_files_paths) >= 1:
-                    acc = parse_json_file(json_files_paths[0])
+            #for gt_type in gt_type_starts[start_type]:
+            #    json_files_expr = os.path.join(input_dir.replace("step4","step1"), f"gt_{limit}_{gt_type}", ".*", "*.json")
+            #    json_files_paths = sorted(glob.glob(json_files_expr))
+            #    if len(json_files_paths) >= 1:
+            #        acc = parse_json_file(json_files_paths[0])
 
-                    plot_data.append({
-                        "x": layer_ids,
-                        "y": [acc]*len(layer_ids),
-                        "label": f"gt:{gt_type}",
-                        "linestyle": "dotted",
-                        "color_tikz": f"c{11 + i}",
-                    })
+            #        plot_data.append({
+            #            "x": layer_ids,
+            #            "y": [acc]*len(layer_ids),
+            #            "label": f"gt:{gt_type}",
+            #            "linestyle": "dotted",
+            #            "color_tikz": f"c{11 + i}",
+            #        })
 
 
-            startype_title={
-               "wait" :"Wait",
-                "eos" :"[EOS]",
-                "<eos>":"[EOS]",
-                "answer":"Answer",
-            }[start_type]
-            plot_meta["title_png"] = f"{model_map[model_name]},\\\\ {dataset_name},\\\\ Intervene `{startype_title}'"
-            plot_meta["title_tikz"] = f"{model_map[model_name]},\\\\ {dataset_name},\\\\ Intervene `{startype_title}'"
+            plot_meta["title_png"] = f"{model_map[model_name]},\\\\ {dataset_name},\\\\ Intervene `{start_type}'"
+            plot_meta["title_tikz"] = f"{model_map[model_name]},\\\\ {dataset_name},\\\\ Intervene `{start_type}'"
             plot_meta["fig_name_png"] = os.path.join(output_dir, f"png_exp4_{model_name}_{dataset_name}_{s}_{start_type.replace("<eos>","eos")}.png")
             plot_meta["fig_name_tikz"] = os.path.join(output_dir, f"exp4_{model_name}_{dataset_name}_{s}_{start_type.replace("<eos>","eos")}.tex")
             plot_meta["fig_name_tikz_2"] = os.path.join("all_exp4_latex_fig", f"exp4_{model_name}_{dataset_name}_{s}_{start_type.replace("<eos>","eos")}.tex")
@@ -236,15 +228,17 @@ def parse_all_result(dataset_name, input_dir, output_dir, ymax, limit, model_nam
 
 
 def run():
-    dataset_name="gsm8k_adv"
-    input_dir="visualize/gsm8k_adv/qwen3b/step4"
-    output_dir="visualize/gsm8k_adv/qwen3b/step6"
-    ymax=0.6
-    limit = 2000
-    model_name="qwen3b"
-    os.makedirs(output_dir, exist_ok=True)
 
-    parse_all_result(dataset_name, input_dir, output_dir, ymax, limit, model_name)
+    dataset_names=["gsm8k_adv","cruxeval_o_adv"]
+    model_names=["MyQwen2.5-3B", "gemma-3-4b-it"]
+    ymaxs=[0.7,0.4]
+    limits=[2000, 500]
+    for dataset_name, limit, ymax in zip(dataset_names, limits, ymaxs):
+        for model_name in model_names:
+            input_dir=f"visualize/{dataset_name}/{model_name}/step4"
+            output_dir=f"visualize/{dataset_name}/{model_name}/step6"
+            os.makedirs(output_dir, exist_ok=True)
+            parse_all_result(dataset_name, input_dir, output_dir, ymax, limit, model_name)
 
 
 

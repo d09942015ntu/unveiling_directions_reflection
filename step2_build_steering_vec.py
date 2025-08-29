@@ -12,7 +12,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
-from my_utils import doc_to_text, cosine_sim, cot_preprocess
+from myutils.my_utils import doc_to_text, cosine_sim, cot_preprocess
 
 
 def init_model_hook_hidden_states(model):
@@ -119,7 +119,7 @@ def get_forward(args, model, tokenizer, json_items, hidden_states, selected_laye
 
 
         check_len = tokenizer.encode(cot_preprocess(doc_to_text(json_item, json_item["cot_messy"], wait_token="None")))
-        print(f"len1:{len(check_len)}")
+        #print(f"len1:{len(check_len)}")
         if len(check_len) > 400:
             continue
 
@@ -179,6 +179,7 @@ def get_forward(args, model, tokenizer, json_items, hidden_states, selected_laye
                     wvecs.append(wvec)
                 output[layer] += np.array(wvecs)*(1/limit)
         success_sample += 1
+        #print(f"success_sample:{success_sample}")
         if success_sample >= limit:
             return output
     return output
